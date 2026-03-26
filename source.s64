@@ -1,0 +1,159 @@
+origin 0x7C00
+
+module data
+    message "hello world" 16
+    count 300 4
+    flag 0xFF 1
+    alias r1 counter
+    alias r2 index
+
+module reserve
+    buffer 1024
+    scratch 64
+
+on interrupt 0x00
+start
+    reti
+end
+
+on interrupt 0x21
+start
+    call handle_keyboard
+    reti
+end
+
+module code
+    extern add_two
+
+    fn global main
+    start
+        # data movement
+        move counter 10
+        move index 20
+        move r3 3.14
+        move r4 0xFF
+        move.1 r1 r2
+        move.2 r1 r2
+        move.4 r1 r2
+        move.8 r1 r2
+        move ret [0x1000]
+        move [0x2000] ret
+        move.4 ret [r1 + 8]
+        move.4 ret [r1 + r2]
+        move.4 ret [r1 + r2 * 4]
+        movesx r1 r2
+        movezx r1 r2
+        push 10
+        push r1
+        pop r1
+        lma src message
+        lma dst buffer
+        swap r1 r2
+
+        # arithmetic
+        add r1 r2
+        sub r1 r2
+        mul r1 r2
+        smul r1 r2
+        div r1 r2
+        sdiv r1 r2
+        inc r1
+        dec r1
+        neg r1
+        awc r1 r2
+        swb r1 r2
+
+        # bitwise
+        and r1 r2
+        or r1 r2
+        xor r1 r2
+        not r1
+        shl r1 r2
+        shr r1 r2
+        asr r1 r2
+        rotl r1 r2
+        rotr r1 r2
+        racl r1 r2
+        racr r1 r2
+
+        # comparison and jumps
+        cmp r1 == r2 go equal
+        cmp r1 != r2 go notequal
+        cmp r1 > r2 go bigger
+        cmp r1 < r2 go smaller
+        cmp r1 >= r2 go biggerequal
+        cmp r1 <= r2 go smallerequal
+        cmp carry go overflow_handler
+        cmp zero go is_zero
+        cmp overflow go signed_overflow
+        go somewhere
+
+        # conditional set
+        set r3 carry
+        set r3 zero
+        set r3 overflow
+
+        # memory block ops
+        move cnt 100
+        rep movs
+        move cnt 100
+        lma dst buffer
+        move ret 0
+        rep stos
+
+        # floating point
+        fmove f1 3.14
+        fmove f2 2.0
+        fadd f1 f2
+        fsub f1 f2
+        fmul f1 f2
+        fdiv f1 f2
+        fcmp f1 f2
+
+        # functions
+        call add_two
+        return
+
+        # port io
+        pr ret 0x60
+        pw 0x60 ret
+
+        # system
+        int 0x21
+        syscall
+        ioff
+        ion
+        nope
+        halt
+
+        equal:
+        notequal:
+        bigger:
+        smaller:
+        biggerequal:
+        smallerequal:
+        overflow_handler:
+        is_zero:
+        signed_overflow:
+        somewhere:
+            halt
+    end
+
+    fn global add_two
+    start
+        pop r1
+        pop r2
+        add r1 r2
+        move ret r1
+        return
+    end
+
+    fn raw boot_entry
+    start
+        move stp 0x90000
+        go kernel_main
+    end
+
+    kernel_main:
+        ioff
+        halt
